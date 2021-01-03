@@ -1,25 +1,19 @@
-import { ApolloServer } from "apollo-server-express";
-import express from "express";
+import { ApolloServer } from "apollo-server";
 import { resolvers } from "./resolvers";
 import { typeDefs } from "./schema";
 import dotenv from 'dotenv';
+import contextMiddleware from './util/contextMiddleware';
 
 dotenv.config();
 
-const startServer = async () => {
+const apolloServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: contextMiddleware,
+  subscriptions: { path: '/' },
+});
 
-  const app = express();
-
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers
-  });
-
-  server.applyMiddleware({ app });
-
-  app.listen({ port: 4000 }, () =>
-    console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
-  );
-};
-
-startServer();
+apolloServer.listen().then(({ url, subscriptionsUrl }) => {
+  console.log(`🚀  Server ready at ${url}`);
+  console.log(`🚀  Susbscription ready at ${subscriptionsUrl}`)
+});
