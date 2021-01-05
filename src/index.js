@@ -1,7 +1,7 @@
 import { ApolloServer } from "apollo-server";
+import dotenv from 'dotenv';
 import { resolvers } from "./resolvers";
 import { typeDefs } from "./schema";
-import dotenv from 'dotenv';
 import contextMiddleware from './util/contextMiddleware';
 
 dotenv.config();
