@@ -6,8 +6,11 @@ export const typeDefs = gql`
     postsOverview: [Post!]!
     postsByCategory (category: String!): [Post!]!
     messages: [Message!]
-    getRooms (uid: Int!): [Room!]!
+    getRooms (uid: String!): [Room!]!
     getMessages (rid: String!): [Message!]!
+    getWishList (uid: String!): [Post!]!
+    getPostsByUser (uid: String!): [Post!]!
+    getPost (pid: String!): Post!
   }
 
   type User {
@@ -18,6 +21,7 @@ export const typeDefs = gql`
     picture: String!
     created: String!
     token: String
+    wishlist: [String!]!
   }
 
   type Post {
@@ -30,9 +34,8 @@ export const typeDefs = gql`
     condition:  String!
     imageurl:  String!
     description:  String!
-    likedby: [Int!]!
-    comments: [String!]!
     created: String!
+    shipping: Boolean!
   }
 
   type Room {
@@ -46,8 +49,8 @@ export const typeDefs = gql`
   type Message {
     mid: ID!
     room: String!
-    from:Int!
-    to:Int!
+    from:String!
+    to:String!
     content: String!
     created: String!
   }
@@ -67,6 +70,7 @@ export const typeDefs = gql`
       email: String!,
       password: String!,
     ): User!,
+    loadUser: User!,
     createPost(
       createdby: Int!
       title:  String!
@@ -76,8 +80,22 @@ export const typeDefs = gql`
       condition:  String!
       imageurl:  String!
       description:  String!
+      shipping:  Boolean!
     ): Post!,
-    createRoom(to: String!, post: String! ): Room!
-    postMessage(room: String!, to: String!, content: String!): Message!
+    editPost(
+      pid:  String!
+      title:  String!
+      price:  Int!
+      category: String!
+      condition:  String!
+      location:  String!
+      imageurl:  String!
+      description:  String!
+      shipping:  Boolean!
+    ): Post!,
+    createRoom(to: String!, post: String! ): Room!,
+    postMessage(room: String!, to: String!, content: String!): Message!,
+    updateWishList(uid: String!, updatedWishList: [String!]!): User!,
+    deletePost(pid: String!): Post!
   }
 `;

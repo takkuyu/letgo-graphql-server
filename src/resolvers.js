@@ -14,6 +14,10 @@ export const resolvers = {
       const users = await db.select("*").from("users")
       return users;
     },
+    getPost: async (_, { pid }) => {
+      const [post] = await db("posts").where("pid", pid);
+      return post;
+    },
     postsOverview: async () => {
       let posts = [];
       for (const category in categories) {
@@ -43,6 +47,26 @@ export const resolvers = {
         throw err
       }
     },
+    getWishList: async (_, { uid }) => {
+      try {
+        const [user] = await db("users").where("uid", uid);
+        if (user) {
+          const wishListItems = await db("posts").whereIn("pid", user.wishlist).orderBy("created", 'asc');
+          return wishListItems
+        }
+      } catch (err) {
+        console.log(err)
+        throw err
+      }
+    },
+    getPostsByUser: async (_, { uid }) => {
+      try {
+        const posts = await db("posts").where("createdby", uid).orderBy("created", 'asc');
+        return posts
+      } catch (err) {
+        throw err
+      }
+    },
     messages: () => messages,
   },
   Mutation: {
@@ -61,9 +85,18 @@ export const resolvers = {
     login: async (_, { email, password }) => {
       const [user] = await db("users").where({ email: email, password: password });
       if (user) {
-        const token = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3d' });
+        const token = jwt.sign({ uid: user.uid }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '3h' });
         user.token = token;
         return user;
+      }
+    },
+    loadUser: async (_, __, { user }) => {
+      try {
+        if (!user) throw new AuthenticationError('Unauthenticated');
+        const [loadedUser] = await db("users").where("uid", user.uid);
+        return loadedUser
+      } catch (err) {
+        throw err
       }
     },
     createPost: async (_, args) => {
@@ -71,11 +104,16 @@ export const resolvers = {
         .returning("*")
         .insert({
           ...args,
-          likedby: [],
-          comments: [],
           created: new Date()
         });
       return post;
+    },
+    updateWishList: async (_, { uid, updatedWishList }) => {
+      const [user] = await db('users')
+        .returning("*")
+        .where('uid', uid)
+        .update({ wishlist: updatedWishList });
+      return user
     },
     createRoom: async (_, { to, post }, { user }) => {
       try {
@@ -117,6 +155,35 @@ export const resolvers = {
         throw err
       }
     },
+    editPost: async (_, args, { user }) => {
+      try {
+        if (!user) throw new AuthenticationError('Unauthenticated')
+        const [post] = await db("posts").returning("*").where("pid", args.pid).update({
+          title: args.title,
+          price: args.price,
+          category: args.category,
+          condition: args.condition,
+          location: args.location,
+          imageurl: args.imageurl,
+          description: args.description,
+          shipping: args.shipping
+        });
+        return post;
+      } catch (err) {
+        console.log(err)
+        throw err
+      }
+    },
+    deletePost: async (_, { pid }, { user }) => {
+      try {
+        if (!user) throw new AuthenticationError('Unauthenticated')
+        const [post] = await db("posts").returning("*").where("pid", pid).del();
+        return post;
+      } catch (err) {
+        console.log(err)
+        throw err
+      }
+    },
   },
   Subscription: {
     newMessage: {
@@ -127,12 +194,11 @@ export const resolvers = {
         },
         ({ newMessage }, _, { user }) => {
           if (
-            newMessage.from === user.uid ||
-            newMessage.to === user.uid
+            newMessage.from === String(user.uid) ||
+            newMessage.to === String(user.uid)
           ) {
             return true
           }
-
           return false
         }
       ),
