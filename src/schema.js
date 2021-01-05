@@ -42,7 +42,7 @@ export const typeDefs = gql`
     rid: ID!
     from: User!
     to: User!
-    post: Post!
+    post: Post
     latestMessage: String
   }
 
@@ -72,7 +72,7 @@ export const typeDefs = gql`
     ): User!,
     loadUser: User!,
     createPost(
-      createdby: Int!
+      createdby: String!
       title:  String!
       category: String!
       location:  String!
